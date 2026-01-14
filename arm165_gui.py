@@ -1,4 +1,3 @@
-# GUI для ARM165 - модуль A
 import sys, time, random
 from datetime import datetime
 from PyQt5.QtWidgets import *
