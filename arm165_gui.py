@@ -1,83 +1,35 @@
-import sys, time, random
+import sys
+from PyQt5 import uic
+from PyQt5.QtWidgets import QApplication,QMainWindow
+from PyQt5.QtCore import QTimer
+import random
 from datetime import datetime
-from PyQt5.QtWidgets import *
-from PyQt5.QtCore import *
 
-class RobotGUI(QMainWindow):
+class GUI(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle("ARM165 Control")
-        self.resize(700, 500)
-        
-        w = QWidget()
-        self.setCentralWidget(w)
-        layout = QVBoxLayout(w)
-        
-        self.pose_label = QLabel("Поза: ожидание...")
-        self.pose_label.setStyleSheet("font-size: 16px;")
-        layout.addWidget(self.pose_label)
-        
-        self.logs_table = QTableWidget(0, 2)
-        self.logs_table.setHorizontalHeaderLabels(["Время", "Действие"])
-        layout.addWidget(self.logs_table)
-        
-        btn_layout = QHBoxLayout()
-        self.cart_btn = QPushButton("Manual Cart")
-        self.joint_btn = QPushButton("Manual Joint")
-        self.grip_btn = QPushButton("Gripper ON")
-        self.pause_btn = QPushButton("Pause")
-        self.stop_btn = QPushButton("Stop")
-        
-        btn_layout.addWidget(self.cart_btn)
-        btn_layout.addWidget(self.joint_btn)
-        btn_layout.addWidget(self.grip_btn)
-        btn_layout.addWidget(self.pause_btn)
-        btn_layout.addWidget(self.stop_btn)
-        layout.addLayout(btn_layout)
-        
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.update_pose)
-        self.timer.start(300)
-        
-        self.cart_btn.clicked.connect(self.cart_click)
-        self.joint_btn.clicked.connect(self.joint_click)
-        self.grip_btn.clicked.connect(self.grip_click)
-        self.pause_btn.clicked.connect(self.pause_click)
-        self.stop_btn.clicked.connect(self.stop_click)
-        
-        self.statusBar().showMessage("Подключен к 192.168.1.10")
+        uic.loadUi('main.ui',self)
+        self.t=QTimer()
+        self.t.timeout.connect(self.p)
+        self.t.start(500)
+        self.manualCartButton.clicked.connect(lambda:self.l("Manual Cart"))
+        self.manualJointButton.clicked.connect(lambda:self.l("Manual Joint"))
+        self.gripperOnButton.clicked.connect(lambda:self.l("Gripper ON"))
+        self.pauseButton.clicked.connect(lambda:self.l("Pause"))
+        self.stopButton.clicked.connect(lambda:self.l("Stop"))
+        self.logs=[]
     
-    def update_pose(self):
-        pose = [random.uniform(0, 1) for _ in range(6)]
-        x, y, z = pose[:3]
-        self.pose_label.setText(f"X:{x:.2f} Y:{y:.2f} Z:{z:.2f} RX:{pose[3]:.2f} RY:{pose[4]:.2f} RZ:{pose[5]:.2f}")
-        self.add_log(f"Pose {pose}")
+    def p(self):
+        pose=[round(random.uniform(-0.5,0.8),3)for _ in range(6)]
+        self.poseLabel.setText(f"Actual tool pose: X:{pose[0]:.3f} Y:{pose[1]:.3f} Z:{pose[2]:.3f} RX:{pose[3]:.3f} RY:{pose[4]:.3f} RZ:{pose[5]:.3f}")
+        self.l(f"Pose: {pose}")
     
-    def add_log(self, text):
-        row = self.logs_table.rowCount()
-        self.logs_table.insertRow(row)
-        self.logs_table.setItem(row, 0, QTableWidgetItem(datetime.now().strftime("%H:%M:%S")))
-        self.logs_table.setItem(row, 1, QTableWidgetItem(text))
-        if row > 20:
-            self.logs_table.removeRow(0)
-    
-    def cart_click(self):
-        self.add_log("Manual Cart включен")
-    
-    def joint_click(self):
-        self.add_log("Manual Joint включен")
-    
-    def grip_click(self):
-        self.add_log("Gripper ON")
-    
-    def pause_click(self):
-        self.add_log("Пауза")
-    
-    def stop_click(self):
-        self.add_log("Стоп")
+    def l(self,msg):
+        t=datetime.now().strftime("%H:%M:%S")
+        self.logs.append(f"{t} {msg}")
+        self.logText.setPlainText("\n".join(self.logs[-20:]))
 
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    window = RobotGUI()
-    window.show()
-    sys.exit(app.exec_())
+app=QApplication(sys.argv)
+w=GUI()
+w.show()
+sys.exit(app.exec_())
